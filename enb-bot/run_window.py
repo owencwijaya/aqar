@@ -4,9 +4,12 @@ import pygetwindow as gw
 from mss import mss
 import pyautogui
 
-window_title = "BlueStacks App Player"
+from time import time
+
+window_title = "BlueStacks X"
 cv2.namedWindow("Image")
 
+loop_time = time()
 with mss() as sct:
     while True:
         try:
@@ -22,6 +25,9 @@ with mss() as sct:
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         
         cv2.imshow("Image", img)
+        
+        print('FPS: {}'.format(1 / (time() - loop_time)))
+        loop_time = time()
         
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
