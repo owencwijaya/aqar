@@ -15,3 +15,4 @@ PyWinBox==0.6
 PyWinCtl==0.3
 rubicon-objc==0.4.7
 typing_extensions==4.9.0
+pygetwindow==0.0.9

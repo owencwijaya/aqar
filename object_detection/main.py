@@ -3,7 +3,7 @@ from time import time
 import argparse
 import os
 
-from windowcapture import MacOSWindowCapture
+from windowcapture import MacOSWindowCapture, WindowCapture
 from vision import Vision
 from hsvfilter import HsvFilter
 
@@ -19,6 +19,8 @@ args = parser.parse_args()
 
 # Window Capture Class
 wincap = MacOSWindowCapture(window_name=args.window_name)
+# wincap = WindowCapture(window_name=args.window_name)
+
 # Needle Target
 vision_humanoid = Vision(f'{COMPONENT_PATH}/humanoid_1.jpg')
 vision_humanoid.init_control_gui()
@@ -27,10 +29,8 @@ hsv_filter = HsvFilter(0, 180, 129, 15, 229, 243, 143, 0, 67, 0)
 
 loop_time = time()
 while True:
-    
     # Capture the window
     screenshot = wincap.get_screenshot()
-    screenshot = cv.cvtColor(screenshot, cv.COLOR_RGBA2RGB)
 
     # Preprocess image
     processed_image = vision_humanoid.apply_hsv_filter(screenshot, hsv_filter)
