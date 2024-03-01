@@ -54,12 +54,12 @@ class RecordPlayer():
                 window.activate()
                 pyautogui.sleep(1)
             else:
-                print(f"No window found with title: {window_title}")
+                print(f"No window found with title: {self.window_title}")
         except Exception as e:
             print(f"An error occurred: {e}")
                 
     def play(self, filename):
-        self.focus_window('BlueStacks App Player')
+        self.focus_window()
         pydirectinput.PAUSE = 0
         # pyautogui.PAUSE = 0
         stop_listener = threading.Thread(target = self.listen_to_esc)
