@@ -26,7 +26,7 @@ with mss() as sct:
         
         cv2.imshow("Image", img)
         
-        print('FPS: {}'.format(1 / (time() - loop_time)))
+        print(f'FPS: {1 / (time() - loop_time)}')
         loop_time = time()
         
         k = cv2.waitKey(1) & 0xFF
