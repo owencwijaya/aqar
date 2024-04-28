@@ -67,7 +67,7 @@ class RioOutputParser:
         win32api.SetCursorPos((int(x), int(y)))
         print(f"DIRECTION | Moved mouse to direction ({x}, {y})")
     
-    def handle_move(self, duration: int): 
+    def handle_move(self, duration: float): 
         start_time = time.time()
         while time.time() - start_time < duration:
             win32api.keybd_event(KEY_MAP['w'], 0, 0, 0)  # 'w' key down
@@ -102,32 +102,42 @@ class RioOutputParser:
             self.focus_window()
         except Exception as e:
             print(f"An error occurred: {e}")
-            return
+            print(e)
+            if ('success' in str(e)):
+                print("[INFO] Window is already focused")
+            else:
+                self.stop = True
+                return
         
-        # split lines between multiline input
-        actions = self.llm_input.splitlines()
+        # # split lines between multiline input
+        # actions = self.llm_input.splitlines()
         
-        # sanitize the inputs from tabs and whitespaces
-        actions = [self.sanitize(action) for action in actions]
+        # # sanitize the inputs from tabs and whitespaces
+        # actions = [self.sanitize(action) for action in actions]
+        print(self.llm_input)
+        actions = eval(self.llm_input)
         
         # include only valid actions
-        actions = [action for action in actions if self.is_valid(action)]
+        # actions = [action for action in actions if self.is_valid(action)]
         
         # obtain action inside the brackets
-        actions = [action[action.index("<") + 1 : action.index(">")] for action in actions]
+        # actions = [action[action.index("<") + 1 : action.index(">")] for action in actions]
         
-        for action in actions:
+        if (len(actions) == 0):
+            self.stop = True
+            
+        for i, action in enumerate(actions):
             if self.stop:
                 print("[INFO] Stop signal received, finishing parsing...")
                 break
             
-            action_type, *action_args = action.split(", ", 1)
+            action_type, action_args = action[0], action [1]
             
             if action_type == Actions.DIRECTION.value:
-                x, y = literal_eval(action_args[0]) 
+                x, y = action_args
                 self.handle_direction(x, y)
             elif action_type == Actions.MOVE.value:
-                duration = int(action_args[0])
+                duration = float(action_args)
                 self.handle_move(duration)
             elif action_type == Actions.ITEMS.value:
                 action = action_args[0]
@@ -135,29 +145,31 @@ class RioOutputParser:
             elif action_type == Actions.WEAPON.value:
                 action = action_args[0]
                 self.handle_weapons(action)
-            elif action_type == Actions.NO_ACTION.value:
-                print("[INFO] NO_ACTION received, finishing parsing...")
-                self.stop = True
-                for _, value in KEY_MAP.items():
-                    win32api.keybd_event(value, 0, 0x2, 0)
-                # win32api.mouse_event(MOUSE_MAP['release'], 0, 0, 0, 0)
             else:
                 print(f"Unknown action: {action_type}")
-        
-if __name__ == "__main__":
-    sample_input = """
-        2 <MOVE, 10>
-        Description: Go to that weapon
-        3 <ITEMS, PICK>
-        Description: Pick up that weapon
-        4 <WEAPON, SHOOT>
-        Description: Shoot
-        5 <NO_ACTION>
-        Description: End the system
-    """
+                
+            if (i < len(actions) - 1):
+                continue
+            
+            print("[INFO] Finishing parsing...")
+            self.stop = True
+            for _, value in KEY_MAP.items():
+                win32api.keybd_event(value, 0, 0x2, 0)
+        # win32api.mouse_event(MOUSE_MAP['release'], 0, 0, 0, 0)
+# if __name__ == "__main__":
+#     sample_input = """
+#         2 <MOVE, 10>
+#         Description: Go to that weapon
+#         3 <ITEMS, PICK>
+#         Description: Pick up that weapon
+#         4 <WEAPON, SHOOT>
+#         Description: Shoot
+#         5 <NO_ACTION>
+#         Description: End the system
+#     """
 
-    parser = RioOutputParser(
-        llm_input = sample_input,
-        window_title = "BlueStacks App Player"
-    )
-    parser.parse()
+#     parser = RioOutputParser(
+#         llm_input = sample_input,
+#         window_title = "BlueStacks App Player"
+#     )
+#     parser.parse()

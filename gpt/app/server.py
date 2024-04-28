@@ -14,13 +14,15 @@ from operator import itemgetter
 
 from decouple import config
 from fastapi import FastAPI
-from app.constant import (
+from constant import (
     INITIAL_SYSTEM_PROMPT,
     INITIAL_HUMAN_PROMPT,
     LIST_OF_INSTRUCTIONS,
     CURRENT_GAME_OBJECTS,
     NEXT_ACTION_PROMPT,
 )
+
+from langchain_groq import ChatGroq
 
 
 class InitiateChatInput(CustomUserType):
@@ -40,52 +42,63 @@ def initiate_chat(custom_input: InitiateChatInput):
                 )
 
     chat_prompt = chat_prompt.format_prompt(
-                    list_of_instructions=custom_input.list_of_instructions,
-                    current_game_objects=custom_input.current_game_objects
-                )
-
-    with get_openai_callback() as cb:
-        output = model(
-            chat_prompt.to_messages()
-        )
-        chat_prompt.messages.append(output)
-
-        print("=" * 40)
-        print(f"Total Cost   : Rp {cb.total_cost * 15000:.2f}")
-        print(f"Total Tokens : {cb.total_tokens}")
-        print("\nModel Output:\n")
-        print(output.content)
-
+        list_of_instructions=custom_input.list_of_instructions,
+        current_game_objects=custom_input.current_game_objects
+    )
+    
+    output = model.invoke(chat_prompt)
+    chat_prompt.messages.append(output)
+    print(output)
     return output.content
+
+    # with get_openai_callback() as cb:
+    #     output = model(
+    #         chat_prompt.to_messages()
+    #     )
+    #     chat_prompt.messages.append(output)
+
+    #     print("=" * 40)
+    #     print(f"Total Cost   : Rp {cb.total_cost * 15000:.2f}")
+    #     print(f"Total Tokens : {cb.total_tokens}")
+    #     print("\nModel Output:\n")
+    #     print(output.content)
+
+    # return output.content
     
 def respond_chat(custom_input: NextChatInput):
     global chat_prompt, model
 
     human_message_prompt = HumanMessagePromptTemplate.from_template(NEXT_ACTION_PROMPT).format(current_game_objects=custom_input.next_game_objects)
     chat_prompt.messages.append(human_message_prompt)
-
-    with get_openai_callback() as cb:
-        output = model(
-            chat_prompt.to_messages()
-        )
-        chat_prompt.messages.append(output)
-
-        print("\nRESULT:")
-        print(f"Total Cost   : Rp {cb.total_cost * 15000:.2f}")
-        print(f"Total Tokens : {cb.total_tokens}")
-        print()
-
+    
+    output = model.invoke(chat_prompt)
+    chat_prompt.messages.append(output)
+    print(output)
     return output.content
+    # with get_openai_callback() as cb:
+    #     output = model(
+    #         chat_prompt.to_messages()
+    #     )
+    #     chat_prompt.messages.append(output)
+
+    #     print("\nRESULT:")
+    #     print(f"Total Cost   : Rp {cb.total_cost * 15000:.2f}")
+    #     print(f"Total Tokens : {cb.total_tokens}")
+    #     print()
+
+    # return output.content
     
 def init_system():
     app = FastAPI()
-    model = ChatOpenAI(openai_api_key=config("OPENAI_API_KEY"), model_name="gpt-3.5-turbo-0613")
+    # model = ChatOpenAI(openai_api_key=config("OPENAI_API_KEY"), model_name="gpt-3.5-turbo-0613")
+    model = ChatGroq(groq_api_key = config("GROQ_API_KEY"), model_name = "mixtral-8x7b-32768", temperature = 0)
     
     return model, app
 
 global chat_prompt
 
 model, app = init_system()
+
 initiate_chat_runnable = RunnableLambda(initiate_chat).with_types(
     input_type=InitiateChatInput,
 )
@@ -98,14 +111,13 @@ add_routes(
     initiate_chat_runnable, 
     path="/initiate-chat"
 )
+
 add_routes(
     app,
     respond_chat_runnable, 
     path="/respond-chat"
 )
 
-
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload = True)
