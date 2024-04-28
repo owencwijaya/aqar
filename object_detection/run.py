@@ -5,27 +5,11 @@ from time import time
 from collections import defaultdict 
 from ultralytics import YOLO
 
-
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
-
-parser = argparse.ArgumentParser(description='Capture and display a specified window.')
-parser.add_argument('--window_name', type=str, help='The name of the window to capture.')
-parser.add_argument('--monitor', type=int, default=1, help='Pick monitor to capture.')
-parser.add_argument('--border', type=int, default=1, help='Existence of border')
-args = parser.parse_args()
-
-
-model = YOLO('yolov8-25.pt')
-
-wincap = MacOSWindowCapture(window_name=args.window_name)
-loop_time = time()
-
-
-def detect_scene(wincap, model):
-    d = {0: 'bench', 1: 'bush', 2: 'car', 3: 'door', 4: 'person', 5: 'target'}
+def detect_scene(screenshot, model):
     
-    screenshot = wincap.get_screenshot()
+    d = {0: 'bench', 1: 'bush', 2: 'car', 3: 'door', 4: 'person', 5: 'target'}
     objs = model(screenshot, save=False)[0]
     
     res = defaultdict(list)
@@ -41,4 +25,28 @@ def detect_scene(wincap, model):
         res[d[cls]].append([c_x, c_y, area, delta_x, delta_y, dist])
 
     return res
+
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Capture and display a specified window.')
+    parser.add_argument('--window_name', type=str, help='The name of the window to capture.')
+    parser.add_argument('--monitor', type=int, default=1, help='Pick monitor to capture.')
+    parser.add_argument('--border', type=int, default=1, help='Existence of border')
+    args = parser.parse_args()
+
+    model = YOLO('yolov8-25.pt')
+    wincap = MacOSWindowCapture(window_name=args.window_name)
+
+    loop_time = time()
+    while True:
+
+        screenshot = wincap.get_screenshot()
+        scene = detect_scene(screenshot, model)
+
+        print(scene)
+        print('FPS {}'.format(1 / (time() - loop_time)))
+
+        loop_time = time()
 
