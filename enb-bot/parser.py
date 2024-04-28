@@ -1,12 +1,14 @@
 
 from enum import Enum
 from ast import literal_eval 
-import pyautogui
 import pydirectinput
 import pygetwindow as gw
 import keyboard as kb
 import time
 import threading
+
+import win32api
+import win32con
 
 class Actions(Enum):
     DIRECTION = "DIRECTION"
@@ -14,6 +16,24 @@ class Actions(Enum):
     ITEMS = "ITEMS"
     WEAPON = "WEAPON"
     NO_ACTION = "NO_ACTION"
+
+KEY_MAP = {
+    'w': 0x57,
+    'a': 0x41,
+    's': 0x53,
+    'd': 0x44,
+    'f': 0x46,
+    'left': 0x25,
+    'right': 0x27,
+    'up': 0x26,
+    'down': 0x28,
+}
+
+MOUSE_MAP = {
+    'left_click': 0x0001,
+    'release': 0x0002,
+}
+
     
 class RioOutputParser:
     llm_input = ""
@@ -30,38 +50,40 @@ class RioOutputParser:
     def is_valid(self, action: str):
         return len(action) > 0 and "description" not in action.lower()
     
-                
+
+    
     def focus_window(self):
         try:
             window = gw.getWindowsWithTitle(self.window_title)[0]
             if window:
                 window.activate()
-                pyautogui.sleep(1)
+                win32api.Sleep(1000)
             else:
                 print(f"No window found with title: {self.window_title}")
         except Exception as e:
             raise e
             
     def handle_direction(self, x: float, y: float):
-        pyautogui.move(x, y)
+        win32api.SetCursorPos((int(x), int(y)))
         print(f"DIRECTION | Moved mouse to direction ({x}, {y})")
     
     def handle_move(self, duration: int): 
         start_time = time.time()
         while time.time() - start_time < duration:
-            pyautogui.keyDown('w')
-        pyautogui.keyUp('w')
-        print(f"MOVE | Moved forwards for {duration} seconds")
+            win32api.keybd_event(KEY_MAP['w'], 0, 0, 0)  # 'w' key down
+        win32api.keybd_event(KEY_MAP['w'], 0, 0x2, 0)  # 'w' key up
+        print(f"MOVE | Moved forward for {duration} seconds")
 
     def handle_items(self, action: str):
         if (action == "PICK"):
-            pyautogui.keyDown('F')
-            pyautogui.keyUp('F')
+            win32api.keybd_event(KEY_MAP['f'], 0, 0, 0)  # 'F' key down
+            win32api.keybd_event(KEY_MAP['f'], 0, 0x2, 0)  # 'F' key up
         print(f"ITEMS | {action}")
         
     def handle_weapons(self, action: str):
         if (action == "SHOOT"):
-            pyautogui.click(button = 'left', clicks = 10, interval = 0.25)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
         print(f"WEAPONS | {action}")
         
     def listen_to_stop(self):
@@ -72,9 +94,10 @@ class RioOutputParser:
             
         
     def parse(self):
+        print("[INFO] Starting parsing...")
         stop_listener = threading.Thread(target = self.listen_to_stop)
         stop_listener.start()
-
+        
         try:
             self.focus_window()
         except Exception as e:
@@ -114,14 +137,15 @@ class RioOutputParser:
                 self.handle_weapons(action)
             elif action_type == Actions.NO_ACTION.value:
                 print("[INFO] NO_ACTION received, finishing parsing...")
-                break
+                self.stop = True
+                for _, value in KEY_MAP.items():
+                    win32api.keybd_event(value, 0, 0x2, 0)
+                # win32api.mouse_event(MOUSE_MAP['release'], 0, 0, 0, 0)
             else:
                 print(f"Unknown action: {action_type}")
         
 if __name__ == "__main__":
     sample_input = """
-        1 <DIRECTION, (0.3, 0.2)>
-        Description: Look for any weapon laying in the ground
         2 <MOVE, 10>
         Description: Go to that weapon
         3 <ITEMS, PICK>
@@ -134,7 +158,6 @@ if __name__ == "__main__":
 
     parser = RioOutputParser(
         llm_input = sample_input,
-        window_title = "Gameloop(64beta)"
+        window_title = "BlueStacks App Player"
     )
     parser.parse()
-    
