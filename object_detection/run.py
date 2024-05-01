@@ -7,7 +7,6 @@ from ultralytics import YOLO
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
-<<<<<<< HEAD
 
 parser = argparse.ArgumentParser(description='Capture and display a specified window.')
 parser.add_argument('--window_name', type=str, help='The name of the window to capture.')
@@ -17,9 +16,6 @@ args = parser.parse_args()
 
 def detect_scene(wincap, model):
     d = {0: 'bench', 1: 'bush', 2: 'car', 3: 'door', 4: 'person', 5: 'target'}
-=======
-def detect_scene(screenshot, model):
->>>>>>> d2b5d0af73e47b38436efaa91c51c30ad281940a
     
     d = {0: 'bench', 1: 'bush', 2: 'car', 3: 'door', 4: 'person', 5: 'target'}
     objs = model(screenshot, save=False)[0]
@@ -44,14 +40,12 @@ def detect_scene(screenshot, model):
     return res
 
 
-<<<<<<< HEAD
 def read_scene(window_name: str = "BlueStacks App Player"):
     model = YOLO('object_detection/yolov8-25.pt')
     wincap = MacOSWindowCapture(window_name=window_name)
     return detect_scene(wincap, model)
 
 # read_scene()
-=======
 
 if __name__ == "__main__":
 
@@ -74,5 +68,4 @@ if __name__ == "__main__":
         print('FPS {}'.format(1 / (time() - loop_time)))
 
         loop_time = time()
->>>>>>> d2b5d0af73e47b38436efaa91c51c30ad281940a
 
