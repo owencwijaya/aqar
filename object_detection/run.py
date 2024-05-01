@@ -17,7 +17,7 @@ args = parser.parse_args()
 def detect_scene(wincap, model):
     d = {0: 'bench', 1: 'bush', 2: 'car', 3: 'door', 4: 'person', 5: 'target'}
     
-    d = {0: 'bench', 1: 'bush', 2: 'car', 3: 'door', 4: 'person', 5: 'target'}
+    screenshot = wincap.get_screenshot()
     objs = model(screenshot, save=False)[0]
     res = defaultdict(list)
     
